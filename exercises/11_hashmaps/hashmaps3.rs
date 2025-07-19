@@ -31,9 +31,40 @@ fn build_scores_table(results: &str) -> HashMap<&str, TeamScores> {
         // Keep in mind that goals scored by team 1 will be the number of goals
         // conceded by team 2. Similarly, goals scored by team 2 will be the
         // number of goals conceded by team 1.
+        let entry = scores.entry(team_1_name).or_default();
+        entry.goals_scored += team_1_score;
+        entry.goals_conceded += team_2_score;
+
+        let entry = scores.entry(team_2_name).or_default();
+        entry.goals_scored += team_2_score;
+        entry.goals_conceded += team_1_score;
+
+        // update_scores(&mut scores, team_1_name, team_1_score, team_2_score);
+        // update_scores(&mut scores, team_2_name, team_2_score, team_1_score);
     }
 
     scores
+}
+
+fn update_scores<'a>(
+    scores: &mut HashMap<&'a str, TeamScores>,
+    team_name: &'a str,
+    team_goals_scored: u8,
+    team_goals_conceded: u8,
+) {
+    match scores.entry(team_name) {
+        std::collections::hash_map::Entry::Occupied(mut occupied_entry) => {
+            let entry = occupied_entry.get_mut();
+            entry.goals_scored += team_goals_scored;
+            entry.goals_conceded += team_goals_conceded;
+        }
+        std::collections::hash_map::Entry::Vacant(vacant_entry) => {
+            vacant_entry.insert(TeamScores {
+                goals_scored: team_goals_scored,
+                goals_conceded: team_goals_conceded,
+            });
+        }
+    }
 }
 
 fn main() {

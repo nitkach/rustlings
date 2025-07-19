@@ -26,24 +26,69 @@ enum IntoColorError {
 // TODO: Tuple implementation.
 // Correct RGB color values must be integers in the 0..=255 range.
 impl TryFrom<(i16, i16, i16)> for Color {
+    // where
+    // u8: std::convert::TryFrom<T>,
+    // {
     type Error = IntoColorError;
 
-    fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {}
+    fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {
+        match (
+            u8::try_from(tuple.0),
+            u8::try_from(tuple.1),
+            u8::try_from(tuple.2),
+        ) {
+            (Ok(red), Ok(green), Ok(blue)) => Ok(Self { red, green, blue }),
+            _ => Err(IntoColorError::IntConversion),
+        }
+    }
 }
 
 // TODO: Array implementation.
-impl TryFrom<[i16; 3]> for Color {
+impl<T> TryFrom<[T; 3]> for Color
+where
+    u8: std::convert::TryFrom<T>,
+{
     type Error = IntoColorError;
 
-    fn try_from(arr: [i16; 3]) -> Result<Self, Self::Error> {}
+    fn try_from(arr: [T; 3]) -> Result<Self, Self::Error> {
+        let mut values = arr.into_iter();
+        let (Some(Ok(red)), Some(Ok(green)), Some(Ok(blue))) = (
+            values.next().map(u8::try_from),
+            values.next().map(u8::try_from),
+            values.next().map(u8::try_from),
+        ) else {
+            return Err(IntoColorError::IntConversion);
+        };
+
+        Ok(Self { red, green, blue })
+    }
 }
 
 // TODO: Slice implementation.
 // This implementation needs to check the slice length.
-impl TryFrom<&[i16]> for Color {
+impl<T: Clone + Copy> TryFrom<&[T]> for Color
+where
+    u8: std::convert::TryFrom<T>,
+{
     type Error = IntoColorError;
 
-    fn try_from(slice: &[i16]) -> Result<Self, Self::Error> {}
+    fn try_from(slice: &[T]) -> Result<Self, Self::Error> {
+        if slice.len() != 3 {
+            return Err(IntoColorError::BadLen);
+        }
+
+        let mut values = slice.iter().copied();
+        let (Some(Ok(red)), Some(Ok(green)), Some(Ok(blue)), None) = (
+            values.next().map(u8::try_from),
+            values.next().map(u8::try_from),
+            values.next().map(u8::try_from),
+            values.next(),
+        ) else {
+            return Err(IntoColorError::IntConversion);
+        };
+
+        Ok(Self { red, green, blue })
+    }
 }
 
 fn main() {
